@@ -4,6 +4,11 @@ const app = express();
 
 app.get('/', (req, res) => res.send('hello there'));
 
+const users = require('./routes/api/users');
+const profile = require('./routes/api/profile');
+const users = require('./routes/api/users');
+
+// MONGO STUFF
 var db = require('./config/keys').mongoURI;
 mongoose
   .connect(db)
