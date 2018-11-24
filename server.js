@@ -1,16 +1,23 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const app = express();
+const bodyParser = require('body-parser');
+const passport = require('passport');
 
-app.get('/', (req, res) => res.send('hello there'));
 
 // ROUTES
 const users = require('./routes/api/users');
 const profile = require('./routes/api/profile');
 const posts = require('./routes/api/posts');
 
-// MONGO STUFF
-var db = require('./config/keys').mongoURI;
+const app = express();
+
+// Body Parser middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+// MONGO DB STUFF
+const db = require('./config/keys').mongoURI;
+
 mongoose
   .connect(db)
   .then(() => console.log('MONGODB CONNECTED'))
@@ -20,6 +27,8 @@ mongoose
 app.use('/api/users', users);
 app.use('/api/profile', profile);
 app.use('/api/posts', posts);
+
+app.get('/', (req, res) => res.send('hello there'));
 
 // SERVER STUFF
 const port  = process.env.PORT || 5000;
