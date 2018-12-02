@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
+
 const mongoose = require('mongoose');
 const passport = require('passport');
+
 const Profile = require('../../models/Profile');
 const Post = require('../../models/Post');
 
 // VALIDATION
-const validatePostInput = require('../../validation/post');
+const { validatePostInput, validateCommentInput } = require('../../validation/post');
 
 // @route     GET api/posts/test
 // @desc      Tests posts route
@@ -108,5 +110,55 @@ router.post('/unlike/:id',
           }).catch(err => res.status(404).json({ postnotfound: 'POST NOT FOUND' }));
       })
 });
+
+
+// @route     POST api/posts/comment/:id
+// @desc      Comment on POST
+// @access    PRIVATE
+router.post('/comment/:id',
+  passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    const { errors, isValid } = validateCommentInput(req.body);
+    if(!isValid) {
+      return res.status(400).json(errors);
+    }
+    try {
+      let post = await Post.findById(req.params.id);
+      if(!post) {
+        errors.nopost = `No post found for ${req.params.id}`;
+        return res.status(400).json(errors);
+      }
+      const newComment = {
+        text: req.body.text,
+        name: req.body.name,
+        avatar: req.body.avatar,
+        user: req.user.id
+      }
+
+      // addcomments to array
+      post.comments.unshift(newComment);
+      // Save Post
+      post = await post.save();
+      return res.json(post);
+    }
+    catch (err) {
+      errors.nopost = `No post found for ${req.params.id}`;
+      return res.status(404).json(errors);
+    }
+  }
+);
+
+// @route     DELETE api/posts/comment/:id/:comment_id
+// @desc      REMOVE COMMENT on POST
+// @access    PRIVATE
+router.delete('/comment/:id/:comment_id', passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+      let post = await Post.findById(req.params.id);
+      if(!post) {
+        errors.nopost = `NO POST FOUND FOR ${req.params.id}`
+      }
+    }
+  });
 
 module.exports = router;
