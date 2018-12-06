@@ -17,7 +17,7 @@ const { validatePostInput, validateCommentInput } = require('../../validation/po
 
 
 // @route     GET api/posts
-// @desc      All posts route
+// @desc      Get All posts route
 // @access    Public
 router.get('/', (req, res) => {
   Post.find()
@@ -108,9 +108,10 @@ router.post('/unlike/:id',
 
             post.save().then(post => res.json(post));
           }).catch(err => res.status(404).json({ postnotfound: 'POST NOT FOUND' }));
-      })
-});
-
+      }
+    );
+  }
+);
 
 // @route     POST api/posts/comment/:id
 // @desc      Comment on POST
@@ -151,14 +152,42 @@ router.post('/comment/:id',
 // @route     DELETE api/posts/comment/:id/:comment_id
 // @desc      REMOVE COMMENT on POST
 // @access    PRIVATE
-router.delete('/comment/:id/:comment_id', passport.authenticate('jwt', { session: false }),
+router.delete(
+  '/comment/:id/:commentId',
+  passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
-      let post = await Post.findById(req.params.id);
-      if(!post) {
+      let post = await Post.findById(req.params.id)
+      if (!post) {
         errors.nopost = `NO POST FOUND FOR ${req.params.id}`
+        return res.status(404).json(errors)
       }
+
+      // Check to see if comment exists
+      if (
+        post.comments.filter(
+          (comment) => comment._id.toString() === req.params.commentId
+        ).length === 0
+      ) {
+        errors.commentnotexists = 'COMMENT DOES NOT EXIST'
+        return res.status(404).json(errors)
+      }
+
+      // Get Remove Index
+      const removeIndex = post.comments
+        .map((item) => item._id.toString())
+        .indexOf(req.params.commentId)
+
+      // Splice comment out of array
+      post.comments.splice(removeIndex, 1)
+
+      await post.save()
+      return res.json(post)
+    } catch (err) {
+      errors.nopost = `No post found for ${req.params.id}`
+      return res.status(404).json(errors)
     }
-  });
+  }
+)
 
 module.exports = router;
